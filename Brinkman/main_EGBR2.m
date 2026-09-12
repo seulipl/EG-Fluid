@@ -4,7 +4,7 @@
 % (EG) method for the Brinkman equations in a 2-dimensional domain:
 %
 %   - div(nu*grad(u)) + K*u + grad(p) = f in Omega
-%                              - div(u) = 0 in Omega
+%                            - div(u) = 0 in Omega
 %
 % with a Dirichlet boundary condition. Continuous piecewise linear
 % functions and discontinuous piecewise constant functions are used for
@@ -17,17 +17,15 @@
 %   TestType = 1: standard EG. Both the body force and the K*(u,v)
 %                 reaction term are assembled directly, elementwise.
 %   TestType = 2: pressure-robust body force only. The body force is
-%                 assembled through the divergence-preserving
-%                 reconstruction operator, while the K*(u,v) reaction
-%                 term is left unmodified, exactly as in TestType 1.
+%                 assembled through the velocity reconstruction
+%                 operator, while the K*(u,v) reaction term is left
+%                 unmodified, exactly as in TestType 1.
 %   TestType = 3: pressure-robust body force AND reaction term. Both the
 %                 body force and the K*(u,v) reaction term are assembled
-%                 through the divergence-preserving reconstruction
-%                 operator (the same edge-based reconstruction used for
-%                 the (u,v)/dt mass term in the time-dependent EG code).
+%                 through the velocity reconstruction operator.
 %                 Changing the body force alone (TestType 2) is not
 %                 enough to obtain pressure-robust results for the
-%                 Brinkman equations -- the reaction/mass term must be
+%                 Brinkman equations; the reaction/mass term must be
 %                 reconstructed the same way, which is what TestType 3
 %                 does.
 %
