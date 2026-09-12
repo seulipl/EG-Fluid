@@ -1,6 +1,6 @@
-# Stokes FEM Codes (based on iFEM)
+# Fluid FEM Codes: Stokes & Brinkman (based on iFEM)
 
-This repository contains MATLAB codes for solving Stokes problems using pressure-robust Enriched Galerkin (EG) finite element methods. It is built on top of selected routines from [iFEM](https://www.math.uci.edu/~chenlong/programming.html), an open-source MATLAB finite element package by Long Chen (GNU GPL v3).
+This repository contains MATLAB codes for solving fluid flow problems (currently the Stokes and Brinkman equations) using pressure-robust Enriched Galerkin (EG) finite element methods. It is built on top of selected routines from [iFEM](https://www.math.uci.edu/~chenlong/programming.html), an open-source MATLAB finite element package by Long Chen (GNU GPL v3).
 
 ---
 
@@ -38,7 +38,7 @@ Since iFEM is also licensed under GPL v3, redistribution and modifications are p
   > Copyright (C) Long Chen, University of California, Irvine.  
   > Licensed under the GNU General Public License v3.  
 
-- Extensions, modifications, and Stokes-specific codes:  
+- Extensions, modifications, and Stokes/Brinkman-specific codes:  
   > Copyright (C) Seulip Lee <seulip.lee@tufts.edu>, Lin Mu <linmu@uga.edu>
 
 See the [LICENSE](LICENSE) file for full details.
