@@ -15,7 +15,7 @@ This repository contains MATLAB codes for solving Stokes problems using pressure
 - **Brinkman/**  
   Main scripts for running Brinkman problem solvers:  
   - `Brinkman2.m`, `Brinkman3.m`: sample problem information
-  - `main_EGBR2.m`, `main_EGBR3.m`: core Brinkman solvers in 2D and 3D using [pressure-robust EG methods](https://doi.org/10.1007/s10915-024-02503-7). Each script's `TestType` selects the standard EG method (1), pressure-robust body force only (2), or the fully pressure-robust body force and reaction/mass term (3).
+  - `main_EGBR2.m`, `main_EGBR3.m`: core Brinkman solvers in 2D and 3D using [uniform and pressure-robust EG methods](https://doi.org/10.1007/s10915-024-02503-7). Each script's `TestType` selects the standard EG method (1), pressure-robust body force only (2), or the fully pressure-robust body force and reaction/mass term (3).
 
 - **iFEM_files/**  
   Essential iFEM routines included here for convenience:  
