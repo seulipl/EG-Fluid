@@ -12,6 +12,11 @@ This repository contains MATLAB codes for solving Stokes problems using pressure
   - `main_EG2.m`, `main_EG3.m`: core Stokes solvers in 2D and 3D using [pressure-robust EG methods](https://doi.org/10.1016/j.cam.2023.115449).
   - `main_EGWG3.m`, `main_EGWG3.m`: core Stokes solvers in 2D and 3D using [pressure-robust modified EG methods](https://doi.org/10.1016/j.camwa.2024.04.023).
 
+- **Brinkman/**  
+  Main scripts for running Brinkman problem solvers:  
+  - `Brinkman2.m`, `Brinkman3.m`: sample problem information
+  - `main_EGBR2.m`, `main_EGBR3.m`: core Brinkman solvers in 2D and 3D using [pressure-robust EG methods](https://doi.org/10.1007/s10915-024-02503-7). Each script's `TestType` selects the standard EG method (1), pressure-robust body force only (2), or the fully pressure-robust body force and reaction/mass term (3).
+
 - **iFEM_files/**  
   Essential iFEM routines included here for convenience:  
   - Mesh generation: `squaremesh.m`, `cubemesh.m`  
@@ -46,6 +51,7 @@ If you use this repository in your research, please cite the following paper:
 
 - X. Hu, S. Lee, L. Mu, and S.-Y. Yi (2024). *Pressure-robust enriched Galerkin methods for the Stokes equations*. Journal of Computational and Applied Mathematics. [doi.org/10.1016/j.cam.2023.115449](https://doi.org/10.1016/j.cam.2023.115449).
 - S. Lee and L. Mu (2024). *A low-cost, parameter-free, and pressure-robust enriched Galerkin method for the Stokes equations*. Computer and Mathematics with Applications. [doi.org/10.1016/j.camwa.2024.04.023](https://doi.org/10.1016/j.camwa.2024.04.023).
+- S. Lee and L. Mu (2024). *A uniform and pressure-robust enriched Galerkin method for the Brinkman equations*. Journal of Scientific Computing, 99, 39. [doi.org/10.1007/s10915-024-02503-7](https://doi.org/10.1007/s10915-024-02503-7).
 
 BibTeX entries:
 
@@ -69,3 +75,15 @@ BibTeX entries:
   year={2024},
   publisher={Elsevier}
 }
+
+@article{lee2024uniform,
+  title={A uniform and pressure-robust enriched Galerkin method for the Brinkman equations},
+  author={Lee, Seulip and Mu, Lin},
+  journal={Journal of Scientific Computing},
+  volume={99},
+  number={2},
+  pages={39},
+  year={2024},
+  publisher={Springer}
+}
+```
