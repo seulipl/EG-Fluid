@@ -53,7 +53,7 @@ close all
 %% Preliminaries
 
 Num = 16;
-rho1 = 3; rho2 = 0;
+rho1 = 3;
 TestType = 3; % 1: standard / 2: PR body force only / 3: PR body force + reaction term
 assert(ismember(TestType,[1 2 3]), 'TestType must be 1, 2, or 3.');
 pde = Brinkman2; nu_fun = pde.nu; K_fun = pde.K;
@@ -195,10 +195,10 @@ ss = -nu_inEdge.*[valL,valL,valR,valR];
 
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% nu*rho1/h*<[u^D],[v^D]> (+ rho2*K jump, if enabled)
+% nu*rho1/h*<[u^D],[v^D]>
 ii = [2*NO+TL,2*NO+TL,2*NO+TR,2*NO+TR];
 jj = [2*NO+TL,2*NO+TR,2*NO+TL,2*NO+TR];
-ss = (nu_inEdge*rho1+rho2*K_inEdge.*lenginEdge.^2).*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
+ss = nu_inEdge*rho1.*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
     -dot(JumpR,JumpL,2),dot(JumpR,JumpR,2)];
 A = A + sparse(ii,jj,ss,DoF,DoF);
 ss = rho1*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
@@ -225,7 +225,6 @@ normVecbd = normVecbd./lengbdEdge;
 
 TB = T.bdEdge2elem;
 % Only one element borders a boundary edge, so its value is used directly.
-K_bd = K_elem(TB);
 nu_bd = nu_elem(TB);
 DphiB = Dphi(TB,:,:);
 JumpB = xEbd - xT(TB,:);
@@ -247,10 +246,10 @@ jj = [Iu,2*NO+repmat(TB,1,7)];
 ss = -nu_bd.*[AcdBB,Add0B,AcdBB,Add0B];
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% nu*rho1/h*<[u^D],[v^D]> (+ rho2*K jump, if enabled)
+% nu*rho1/h*<[u^D],[v^D]>
 ii = 2*NO+TB;
 jj = 2*NO+TB;
-ss = (nu_bd*rho1+rho2*K_bd.*lengbdEdge.^2).*dot(JumpB,JumpB,2);
+ss = nu_bd*rho1.*dot(JumpB,JumpB,2);
 A = A + sparse(ii,jj,ss,DoF,DoF);
 ss = rho1.*dot(JumpB,JumpB,2);
 B = B + sparse(TB,TB,ss,NT,NT);
@@ -362,12 +361,13 @@ if TestType == 3
     R = S*R*S';
     D(2*NO+1:2*NO+NT,2*NO+1:2*NO+NT) = D(2*NO+1:2*NO+NT,2*NO+1:2*NO+NT) + R;
 
-    % Energy-error matrix: Stokes part of the D-D block only (reaction
-    % term excluded), matching the convention used for TestType 1 and 2.
-    % Assumes nu is constant over the mesh (as in the reference
-    % time-dependent code); replace nu_elem(1) with a proper nu-weighted
-    % quadrature if nu becomes spatially varying.
-    B = A(2*NO+1:2*NO+NT,2*NO+1:2*NO+NT)/nu_elem(1);
+    % B (energy-error matrix) is left as the pure jump-penalty
+    % accumulator built above during edge assembly -- the same one used
+    % for TestType 1 and 2 -- rather than sliced from A's D-D block.
+    % Slicing A there also picks up the elemental Add term and the
+    % {grad u}.n consistency term, which makes err_u incomparable across
+    % TestType; keeping B consistent keeps err_u meaningful and
+    % comparable for all three TestTypes.
 
     A(1:DoF_u,1:DoF_u) = A(1:DoF_u,1:DoF_u) + D;
 end

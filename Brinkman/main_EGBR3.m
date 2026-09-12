@@ -17,17 +17,17 @@
 %   TestType = 1: standard EG. Both the body force and the K*(u,v)
 %                 reaction term are assembled directly, elementwise.
 %   TestType = 2: pressure-robust body force only. The body force is
-%                 assembled through the divergence-preserving
-%                 reconstruction operator, while the K*(u,v) reaction
-%                 term is left unmodified, exactly as in TestType 1.
+%                 assembled through the velocity reconstruction
+%                 operator, while the K*(u,v) reaction term is left
+%                 unmodified, exactly as in TestType 1.
 %   TestType = 3: pressure-robust body force AND reaction term. Both the
 %                 body force and the K*(u,v) reaction term are assembled
-%                 through the divergence-preserving (RT0) reconstruction
-%                 operator -- the same reconstruction used for the
-%                 (u,v)/dt mass term in the 3D time-dependent EG code
-%                 (main_EGTime3_PR_BE.m). Changing the body force alone
-%                 (TestType 2) is not enough to obtain pressure-robust
-%                 results for the Brinkman equations.
+%                 through the velocity reconstruction operator.
+%                 Changing the body force alone (TestType 2) is not
+%                 enough to obtain pressure-robust results for the
+%                 Brinkman equations; the reaction/mass term must be
+%                 reconstructed the same way, which is what TestType 3
+%                 does.
 %
 % Necessary m-files from iFEM (by L. Chen)
 %   auxstructure3.m
@@ -57,7 +57,7 @@ clear
 tic
 Num = 16; % 1/Num = h
 use_iterative = false; % true: inexact_block_precond_solver, false: direct (\)
-rho1 = 3; rho2 = 0;
+rho1 = 3;
 TestType = 3; % 1: standard / 2: PR body force only / 3: PR body force + reaction term
 assert(ismember(TestType,[1 2 3]), 'TestType must be 1, 2, or 3.');
 pde = Brinkman3; nu_fun = pde.nu; K_fun = pde.K;
@@ -209,10 +209,10 @@ ss = -nu_inFace.*[valL,valL,valR,valR];
 
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% nu*rho1/h*<[u^D],[v^D]> (+ rho2*K jump, if enabled)
+% nu*rho1/h*<[u^D],[v^D]>
 ii = [3*NO+TL,3*NO+TL,3*NO+TR,3*NO+TR];
 jj = [3*NO+TL,3*NO+TR,3*NO+TL,3*NO+TR];
-ss = (nu_inFace*rho1+rho2*K_inFace.*areainFace).*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
+ss = nu_inFace*rho1.*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
     -dot(JumpR,JumpL,2),dot(JumpR,JumpR,2)].*sqrt(areainFace);
 A = A + sparse(ii,jj,ss,DoF,DoF);
 B = B + sparse([TL,TL,TR,TR],[TL,TR,TL,TR],ss,NT,NT);
@@ -238,7 +238,6 @@ normVecbd = normVecbd./(areabdFace*2);
 
 TB = T.bdFace2elem;
 % Only one element borders a boundary face, so its value is used directly.
-K_bd = K_elem(TB);
 nu_bd = nu_elem(TB);
 DphiB = Dphi(TB,:,:);
 JumpB = xFbd - xT(TB,:);
@@ -260,10 +259,10 @@ jj = [Iu,3*NO+repmat(TB,1,13)];
 ss = -nu_bd.*[AcdBB,Add0B,AcdBB,Add0B];
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% rho1/h<[u^D],[v^D]> (+ rho2*K jump, if enabled)
+% rho1/h<[u^D],[v^D]>
 ii = 3*NO+TB;
 jj = 3*NO+TB;
-ss = (nu_bd*rho1+rho2*K_bd.*areabdFace).*dot(JumpB,JumpB,2).*sqrt(areabdFace);
+ss = nu_bd*rho1.*dot(JumpB,JumpB,2).*sqrt(areabdFace);
 A = A + sparse(ii,jj,ss,DoF,DoF);
 B = B + sparse(TB,TB,ss,NT,NT);
 
@@ -306,11 +305,9 @@ coefR = dot(JumpR,normVecin,2)/2.*areainFace;
 
 %% Assemble Reaction-Term (Mass-Term) Reconstruction -- TestType 3 only
 %
-% Same RT0-based, divergence-preserving reconstruction used for the
-% (u,v)/dt mass term in the 3D time-dependent EG code
-% (main_EGTime3_PR_BE.m), applied here to the K*(u,v) reaction term.
-% K_elem/K_inFace weight every piece so this stays correct once K is
-% spatially varying (e.g. a permeability map).
+% Same RT0-based, velocity reconstruction applied here to the K*(u,v)
+% reaction term. K_elem/K_inFace weights every piece so this stays
+% correct once K is spatially varying (e.g. a permeability map).
 
 if TestType == 3
     D = sparse(DoF_u,DoF_u);
