@@ -292,9 +292,8 @@ coefR = dot(JumpR,normVecin,2)/2.*lenginEdge;
 
 %% Assemble Reaction-Term (Mass-Term) Reconstruction -- TestType 3 only
 %
-% Same edge-based, divergence-preserving reconstruction used for the
-% (u,v)/dt mass term in the time-dependent EG code, applied here to the
-% K*(u,v) reaction term. K_elem/K_inEdge weight every piece so this stays
+% Same edge-based, velocity reconstruction applied here to the K*(u,v)
+% reaction term. K_elem/K_inEdge weights every piece so this stays
 % correct once K is spatially varying (e.g. a permeability map).
 
 if TestType == 3
