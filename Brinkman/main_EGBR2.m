@@ -71,9 +71,7 @@ NT = size(elem,1); NE = size(T.edge,1); NO = size(node,1);
 % Degrees of freedom
 DoF_u = (2*NO+NT); DoF_p = NT; DoF = DoF_u + DoF_p;
 
-% K and nu are defined at each element's centroid (not averaged from
-% vertices), so a sharp permeability/viscosity interface between elements
-% stays sharp instead of being blended across the boundary element.
+% K and nu are defined at each element's centroid.
 K_elem = K_fun(xT);
 nu_elem = nu_fun(xT);
 
@@ -89,8 +87,8 @@ for i = 1:3
     for j = 1:3
         % nu*(grad u^C, grad v^C)
         Acc = nu_elem.*dot(Dphi(:,:,i),Dphi(:,:,j),2).*area;
-        % K*(u^C,v^C) -- assembled directly for every TestType
-        Ccc = localC(i,j)*K_elem.*(area/3); % higher order needed
+        % K*(u^C,v^C), assembled directly for every TestType
+        Ccc = localC(i,j)*K_elem.*(area/3);
         A = A + sparse([elem(:,i);NO+elem(:,i)],[elem(:,j);NO+elem(:,j)],[Acc+Ccc;Acc+Ccc],DoF,DoF);
     end
     Acp = Dphi(:,:,i).*area; % -(div u^C, q) and -(div v^C, p)
@@ -152,9 +150,7 @@ normVecin = normVecin./lenginEdge;
 TL = double(T.edge2elem(inEdge,1));
 TR = double(T.edge2elem(inEdge,2));
 
-% K is the harmonic mean of the two adjacent elements' values (the
-% standard interface-permeability average for porous media), while nu
-% (a diffusion/DG-penalty coefficient, not a flux-continuity coefficient)
+% K is the harmonic mean of the two adjacent elements' values, while nu
 % uses the usual arithmetic average.
 K_inEdge = 2*K_elem(TL).*K_elem(TR)./(K_elem(TL)+K_elem(TR));
 nu_inEdge = (nu_elem(TL)+nu_elem(TR))/2;
@@ -224,7 +220,6 @@ normVecbd = [(node(T.bdEdge(:,2),2)-node(T.bdEdge(:,1),2)),...
 normVecbd = normVecbd./lengbdEdge;
 
 TB = T.bdEdge2elem;
-% Only one element borders a boundary edge, so its value is used directly.
 nu_bd = nu_elem(TB);
 DphiB = Dphi(TB,:,:);
 JumpB = xEbd - xT(TB,:);
@@ -289,7 +284,7 @@ PhiDoFR = dot(PhiDoFR,normVecin,2).*(lenginEdge/2);
 coefL = dot(JumpL,normVecin,2)/2.*lenginEdge;
 coefR = dot(JumpR,normVecin,2)/2.*lenginEdge;
 
-%% Assemble Reaction-Term (Mass-Term) Reconstruction -- TestType 3 only
+%% Assemble Reaction-Term (Mass-Term) Reconstruction - TestType 3 only
 %
 % Same edge-based, velocity reconstruction applied here to the K*(u,v)
 % reaction term. K_elem/K_inEdge weights every piece so this stays
@@ -362,8 +357,8 @@ if TestType == 3
     D(2*NO+1:2*NO+NT,2*NO+1:2*NO+NT) = D(2*NO+1:2*NO+NT,2*NO+1:2*NO+NT) + R;
 
     % B (energy-error matrix) is left as the pure jump-penalty
-    % accumulator built above during edge assembly -- the same one used
-    % for TestType 1 and 2 -- rather than sliced from A's D-D block.
+    % accumulator built above during edge assembly, the same one used
+    % for TestType 1 and 2, rather than sliced from A's D-D block.
     % Slicing A there also picks up the elemental Add term and the
     % {grad u}.n consistency term, which makes err_u incomparable across
     % TestType; keeping B consistent keeps err_u meaningful and
