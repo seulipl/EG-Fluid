@@ -21,19 +21,17 @@
 % variable 'TestType' indicates the standard EG method (TestType = 1) or
 % the pressure-robust EG method (TestType = 2).
 %
-% Necessary m-files from iFEM (by L. Chen)
-%   auxstructure.m
-%   squaremesh.m
-%   gradbasis.m
-% included in iFEM_files folder.
+% Dependencies (from iFEM by L. Chen):
+%   auxstructure.m, squaremesh.m, gradbasis.m
 %
 % See also: Stokes2.m, as examples.
 %
-% Reference: 'A low-cost, penalty parameter-free, and pressure-robust
-% enriched Galerkin method for the Stokes equations' by S. Lee and L. Mu,
-% 2024.
+% References:
+%   S. Lee and L. Mu, "A low-cost, penalty parameter-free, and
+%     pressure-robust enriched Galerkin method for the Stokes equations,"
+%     Computers & Mathematics with Applications, 2024.
 %
-% Author: Seulip Lee and Lin Mu
+% Authors: Seulip Lee and Lin Mu
 %
 clear
 close all
@@ -406,7 +404,7 @@ err_u = sqrt(sum(err_uCt)+(uD'*B2*uD)/nu_val);
 err_p = sqrt(sum(err_pt.*area));
 err_axp = sqrt(sum((ph-pt).^2.*area));
 
-fprintf('\n    ||u-u_h||_E : %f    ||P_0p-p_h||_0 : %f    ||p-p_h||_0 : %f\n\n',err_u,err_axp,err_p)
+fprintf('\n    ||u-u_h||_E : %.3e    ||P_0p-p_h||_0 : %.3e    ||p-p_h||_0 : %.3e\n\n',err_u,err_axp,err_p)
 
 %% Plot Numerical Solutions
 

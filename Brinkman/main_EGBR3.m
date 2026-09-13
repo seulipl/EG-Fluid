@@ -4,7 +4,7 @@
 % (EG) method for the Brinkman equations in a 3-dimensional domain:
 %
 %   - div(nu*grad(u)) + K*u + grad(p) = f in Omega
-%                              - div(u) = 0 in Omega
+%                            - div(u) = 0 in Omega
 %
 % with a Dirichlet boundary condition. Continuous piecewise linear
 % functions and discontinuous piecewise constant functions are used for
@@ -13,7 +13,7 @@
 % velocity.
 %
 % TestType controls how the body force f and the reaction term K*(u,v)
-% (the "mass term") are assembled -- identical semantics to MAIN_EGBR2:
+% (the "mass term") are assembled (identical semantics to MAIN_EGBR2):
 %   TestType = 1: standard EG. Both the body force and the K*(u,v)
 %                 reaction term are assembled directly, elementwise.
 %   TestType = 2: pressure-robust body force only. The body force is
@@ -29,35 +29,28 @@
 %                 reconstructed the same way, which is what TestType 3
 %                 does.
 %
-% Necessary m-files from iFEM (by L. Chen)
-%   auxstructure3.m
-%   cubemesh.m
-%   gradbasis3.m
-%   mycross.m
-%   myunique.m
-%   quadpts3.m
-% included in iFEM_files folder.
+% Dependencies (from iFEM by L. Chen):
+%   auxstructure3.m, cubemesh.m, gradbasis3.m, mycross.m, myunique.m, quadpts3.m
 %
 % See also: Brinkman3.m, as an example.
 %
 % References:
-%   'An enriched Galerkin method for the Stokes equations' by
-%     S.-Y. Yi, X. Hu, S. Lee, and J. H. Adler, 2022.
-%   'Pressure-robust enriched Galerkin methods for the Stokes equations'
-%     by X. Hu, S. Lee, L. Mu, and S.-Y. Yi, 2024.
-%   'A Uniform and Pressure-Robust Enriched Galerkin Method for the
-%     Brinkman Equations' by S. Lee and L. Mu, 2024.
+%   S.-Y. Yi, X. Hu, S. Lee, and J. H. Adler, "An enriched Galerkin method
+%     for the Stokes equations," Computers & Mathematics with Applications, 2022.
+%   X. Hu, S. Lee, L. Mu, and S.-Y. Yi, "Pressure-robust enriched Galerkin
+%     methods for the Stokes equations," Journal of Computational and
+%     Applied Mathematics, 2024.
+%   S. Lee and L. Mu, "A Uniform and Pressure-Robust Enriched Galerkin
+%     Method for the Brinkman Equations," Journal of Scientific Computing, 2024.
 %
-% Author: Seulip Lee and Lin Mu
+% Authors: Seulip Lee and Lin Mu
 %
 clear
 
 %% Preliminaries
 
-tic
-Num = 16; % 1/Num = h
-use_iterative = false; % true: inexact_block_precond_solver, false: direct (\)
-rho1 = 3;
+Num = 4; % 1/Num = h
+rho = 3;
 TestType = 3; % 1: standard / 2: PR body force only / 3: PR body force + reaction term
 assert(ismember(TestType,[1 2 3]), 'TestType must be 1, 2, or 3.');
 pde = Brinkman3; nu_fun = pde.nu; K_fun = pde.K;
@@ -75,9 +68,7 @@ NT = size(elem,1); NF = size(T.face,1); NO = size(node,1);
 % Degrees of freedom
 DoF_u = (3*NO+NT); DoF_p = NT; DoF = DoF_u + DoF_p;
 
-% K and nu are defined at each element's centroid (not averaged from
-% vertices), so a sharp permeability/viscosity interface between elements
-% stays sharp instead of being blended across the boundary element.
+% K and nu are defined at each element's centroid.
 K_elem = K_fun(xT);
 nu_elem = nu_fun(xT);
 
@@ -93,7 +84,7 @@ for i = 1:4
     for j = 1:4
         % nu*(grad u^C, grad v^C)
         Acc = nu_elem.*dot(Dphi(:,:,i),Dphi(:,:,j),2).*volume;
-        % K*(u^C,v^C) -- assembled directly for every TestType
+        % K*(u^C,v^C), assembled directly for every TestType
         Ccc = localC(i,j).*K_elem.*volume;
         A = A + sparse([elem(:,i);NO+elem(:,i);2*NO+elem(:,i)],...
             [elem(:,j);NO+elem(:,j);2*NO+elem(:,j)],[Acc+Ccc;Acc+Ccc;Acc+Ccc],DoF,DoF);
@@ -164,9 +155,7 @@ normVecin = normVecin./(areainFace*2);
 TL = double(T.face2elem(inFace,1));
 TR = double(T.face2elem(inFace,2));
 
-% K is the harmonic mean of the two adjacent elements' values (the
-% standard interface-permeability average for porous media), while nu
-% (a diffusion/DG-penalty coefficient, not a flux-continuity coefficient)
+% K is the harmonic mean of the two adjacent elements' values, while nu
 % uses the usual arithmetic average.
 K_inFace = 2*K_elem(TL).*K_elem(TR)./(K_elem(TL)+K_elem(TR));
 nu_inFace = (nu_elem(TL)+nu_elem(TR))/2;
@@ -209,10 +198,10 @@ ss = -nu_inFace.*[valL,valL,valR,valR];
 
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% nu*rho1/h*<[u^D],[v^D]>
+% nu*rho/h*<[u^D],[v^D]>
 ii = [3*NO+TL,3*NO+TL,3*NO+TR,3*NO+TR];
 jj = [3*NO+TL,3*NO+TR,3*NO+TL,3*NO+TR];
-ss = nu_inFace*rho1.*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
+ss = nu_inFace*rho.*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
     -dot(JumpR,JumpL,2),dot(JumpR,JumpR,2)].*sqrt(areainFace);
 A = A + sparse(ii,jj,ss,DoF,DoF);
 B = B + sparse([TL,TL,TR,TR],[TL,TR,TL,TR],ss,NT,NT);
@@ -237,7 +226,6 @@ areabdFace = vecnorm(normVecbd,2,2)/2;
 normVecbd = normVecbd./(areabdFace*2);
 
 TB = T.bdFace2elem;
-% Only one element borders a boundary face, so its value is used directly.
 nu_bd = nu_elem(TB);
 DphiB = Dphi(TB,:,:);
 JumpB = xFbd - xT(TB,:);
@@ -259,10 +247,10 @@ jj = [Iu,3*NO+repmat(TB,1,13)];
 ss = -nu_bd.*[AcdBB,Add0B,AcdBB,Add0B];
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% rho1/h<[u^D],[v^D]>
+% rho/h<[u^D],[v^D]>
 ii = 3*NO+TB;
 jj = 3*NO+TB;
-ss = nu_bd*rho1.*dot(JumpB,JumpB,2).*sqrt(areabdFace);
+ss = nu_bd*rho.*dot(JumpB,JumpB,2).*sqrt(areabdFace);
 A = A + sparse(ii,jj,ss,DoF,DoF);
 B = B + sparse(TB,TB,ss,NT,NT);
 
@@ -303,11 +291,10 @@ PhiDoFR = dot(PhiDoFR,normVecin,2).*(areainFace/3);
 coefL = dot(JumpL,normVecin,2)/2.*areainFace;
 coefR = dot(JumpR,normVecin,2)/2.*areainFace;
 
-%% Assemble Reaction-Term (Mass-Term) Reconstruction -- TestType 3 only
+%% Assemble Reaction-Term (Mass-Term) Reconstruction - TestType 3 only
 %
 % Same RT0-based, velocity reconstruction applied here to the K*(u,v)
-% reaction term. K_elem/K_inFace weights every piece so this stays
-% correct once K is spatially varying (e.g. a permeability map).
+% reaction term.
 
 if TestType == 3
     D = sparse(DoF_u,DoF_u);
@@ -377,7 +364,7 @@ if TestType == 3
         nVeck = cross(r12k,r13k,2);
         aFk = vecnorm(nVeck,2,2)/2;
         nVeck = nVeck./(2*aFk);
-        flipk = dot(nVeck, xFk - node(elem(:,k),:), 2) > 0;
+        flipk = dot(nVeck, xFk - node(elem(:,k),:), 2) < 0;
         nVeck(flipk,:) = -nVeck(flipk,:);
         DpJ1 = Dphi(:,:,j1); DpJ2 = Dphi(:,:,j2); DpJ3 = Dphi(:,:,j3);
         PhiDoFTk = 2*(cross(DpJ1,DpJ2,2)+cross(DpJ2,DpJ3,2)+cross(DpJ3,DpJ1,2));
@@ -389,15 +376,6 @@ if TestType == 3
     R3d(bdFace,:) = R3d(bdFace,:)*0; R3d(:,bdFace) = R3d(:,bdFace)*0;
     R3d = S3d*R3d*S3d';
     D(3*NO+1:3*NO+NT, 3*NO+1:3*NO+NT) = D(3*NO+1:3*NO+NT, 3*NO+1:3*NO+NT) + R3d;
-
-    % B (energy-error matrix) is left as the pure jump-penalty
-    % accumulator built above during face assembly -- the same one used
-    % for TestType 1 and 2 -- rather than sliced from A's D-D block
-    % (as in main_EGTime3_PR_BE.m). Slicing A there also picks up the
-    % elemental Add term and the {grad u}.n consistency term, which
-    % makes err_u incomparable across TestType and blows up in the
-    % Darcy-dominated (small nu) regime; keeping B consistent keeps
-    % err_u meaningful and comparable for all three TestTypes.
 
     A(1:DoF_u,1:DoF_u) = A(1:DoF_u,1:DoF_u) + D;
 end
@@ -493,15 +471,7 @@ x(end) = pt(end);
 
 F = F - A(:,isBdDoF)*x(isBdDoF);
 
-Nu_free = sum(~isBdDoF(1:DoF_u));
-Np_free = DoF_p - 1; % use the fact that the last pressure dof is fixed
-Mp = spdiags(volume(1:end-1), 0, Np_free, Np_free); % use the fact that the last pressure dof is fixed
-
-if use_iterative
-    x(freeDoF) = inexact_block_precond_solver(A(freeDoF,freeDoF), F(freeDoF), Nu_free, Np_free, Mp, nu_elem(1));
-else
-    x(freeDoF) = A(freeDoF,freeDoF)\F(freeDoF);
-end
+x(freeDoF) = A(freeDoF,freeDoF)\F(freeDoF);
 
 %% Compute Errors
 
@@ -540,15 +510,9 @@ end
 err_Dut = err_Dut.*volume; err_ut = err_ut.*volume; err_pt = err_pt.*volume;
 
 err_u0 = sqrt(sum(err_ut));
-% Discrete H1-type seminorm scaled by nu, sqrt(nu)*||u-u_h||_E (nu_elem
-% multiplies err_Dut, and B already has nu baked in from face assembly).
 err_u = sqrt(sum(nu_elem.*err_Dut) + uhD'*B*uhD);
-% Brinkman energy norm |||u-u_h|||^2 = nu*||u-u_h||_E^2 + ||u-u_h||_0^2. Since
-% err_u above already carries the nu factor, this is just sqrt(err_u^2+err_u0^2).
 err_triple = sqrt(sum(nu_elem.*err_Dut) + uhD'*B*uhD + sum(err_ut));
 err_axp = sqrt(sum((ph-pt).^2.*volume));
 err_p = sqrt(sum(err_pt));
 
-fprintf('\n    sqrt(nu)*||u-u_h||_E : %f    ||u-u_h||_0 : %f    |||u-u_h||| : %f    ||P_0p-p_h||_0 : %f    ||p-p_h||_0 : %f\n\n',err_u,err_u0,err_triple,err_axp,err_p)
-
-toc
+fprintf('\n    sqrt(nu)*||u-u_h||_E : %.3e    ||u-u_h||_0 : %.3e    |||u-u_h||| : %.3e    ||P_0p-p_h||_0 : %.3e    ||p-p_h||_0 : %.3e\n\n',err_u,err_u0,err_triple,err_axp,err_p)

@@ -29,31 +29,29 @@
 %                 reconstructed the same way, which is what TestType 3
 %                 does.
 %
-% Necessary m-files from iFEM (by L. Chen)
-%   auxstructure.m
-%   squaremesh.m
-%   gradbasis.m
-% included in iFEM_files folder.
+% Dependencies (from iFEM by L. Chen):
+%   auxstructure.m, squaremesh.m, gradbasis.m
 %
 % See also: Brinkman2.m, as an example.
 %
 % References:
-%   'An enriched Galerkin method for the Stokes equations' by
-%     S.-Y. Yi, X. Hu, S. Lee, and J. H. Adler, 2022.
-%   'Pressure-robust enriched Galerkin methods for the Stokes equations'
-%     by X. Hu, S. Lee, L. Mu, and S.-Y. Yi, 2024.
-%   'A Uniform and Pressure-Robust Enriched Galerkin Method for the
-%     Brinkman Equations' by S. Lee and L. Mu, 2024.
+%   S.-Y. Yi, X. Hu, S. Lee, and J. H. Adler, "An enriched Galerkin method
+%     for the Stokes equations," Computers & Mathematics with Applications, 2022.
+%   X. Hu, S. Lee, L. Mu, and S.-Y. Yi, "Pressure-robust enriched Galerkin
+%     methods for the Stokes equations," Journal of Computational and
+%     Applied Mathematics, 2024.
+%   S. Lee and L. Mu, "A Uniform and Pressure-Robust Enriched Galerkin
+%     Method for the Brinkman Equations," Journal of Scientific Computing, 2024.
 %
-% Author: Seulip Lee and Lin Mu
+% Authors: Seulip Lee and Lin Mu
 %
 clear
 close all
 
 %% Preliminaries
 
-Num = 16;
-rho1 = 3;
+Num = 4;
+rho = 3;
 TestType = 3; % 1: standard / 2: PR body force only / 3: PR body force + reaction term
 assert(ismember(TestType,[1 2 3]), 'TestType must be 1, 2, or 3.');
 pde = Brinkman2; nu_fun = pde.nu; K_fun = pde.K;
@@ -191,13 +189,13 @@ ss = -nu_inEdge.*[valL,valL,valR,valR];
 
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% nu*rho1/h*<[u^D],[v^D]>
+% nu*rho/h*<[u^D],[v^D]>
 ii = [2*NO+TL,2*NO+TL,2*NO+TR,2*NO+TR];
 jj = [2*NO+TL,2*NO+TR,2*NO+TL,2*NO+TR];
-ss = nu_inEdge*rho1.*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
+ss = nu_inEdge*rho.*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
     -dot(JumpR,JumpL,2),dot(JumpR,JumpR,2)];
 A = A + sparse(ii,jj,ss,DoF,DoF);
-ss = rho1*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
+ss = rho*[dot(JumpL,JumpL,2),-dot(JumpL,JumpR,2),...
     -dot(JumpR,JumpL,2),dot(JumpR,JumpR,2)];
 B = B + sparse([TL,TL,TR,TR],[TL,TR,TL,TR],ss,NT,NT);
 
@@ -241,12 +239,12 @@ jj = [Iu,2*NO+repmat(TB,1,7)];
 ss = -nu_bd.*[AcdBB,Add0B,AcdBB,Add0B];
 A = A + sparse(ii,jj,ss,DoF,DoF);
 
-% nu*rho1/h*<[u^D],[v^D]>
+% nu*rho/h*<[u^D],[v^D]>
 ii = 2*NO+TB;
 jj = 2*NO+TB;
-ss = nu_bd*rho1.*dot(JumpB,JumpB,2);
+ss = nu_bd*rho.*dot(JumpB,JumpB,2);
 A = A + sparse(ii,jj,ss,DoF,DoF);
-ss = rho1.*dot(JumpB,JumpB,2);
+ss = rho.*dot(JumpB,JumpB,2);
 B = B + sparse(TB,TB,ss,NT,NT);
 
 % <{p},[v^D]>
@@ -287,8 +285,7 @@ coefR = dot(JumpR,normVecin,2)/2.*lenginEdge;
 %% Assemble Reaction-Term (Mass-Term) Reconstruction - TestType 3 only
 %
 % Same edge-based, velocity reconstruction applied here to the K*(u,v)
-% reaction term. K_elem/K_inEdge weights every piece so this stays
-% correct once K is spatially varying (e.g. a permeability map).
+% reaction term.
 
 if TestType == 3
     D = sparse(DoF_u,DoF_u);
@@ -355,14 +352,6 @@ if TestType == 3
     R(bdEdge,:) = R(bdEdge,:)*0; R(:,bdEdge) = R(:,bdEdge)*0;
     R = S*R*S';
     D(2*NO+1:2*NO+NT,2*NO+1:2*NO+NT) = D(2*NO+1:2*NO+NT,2*NO+1:2*NO+NT) + R;
-
-    % B (energy-error matrix) is left as the pure jump-penalty
-    % accumulator built above during edge assembly, the same one used
-    % for TestType 1 and 2, rather than sliced from A's D-D block.
-    % Slicing A there also picks up the elemental Add term and the
-    % {grad u}.n consistency term, which makes err_u incomparable across
-    % TestType; keeping B consistent keeps err_u meaningful and
-    % comparable for all three TestTypes.
 
     A(1:DoF_u,1:DoF_u) = A(1:DoF_u,1:DoF_u) + D;
 end
@@ -450,14 +439,6 @@ F = F - A(:,isBdDoF)*x(isBdDoF);
 
 x(freeDoF) = A(freeDoF,freeDoF)\F(freeDoF);
 
-Nu_free = sum(~isBdDoF(1:DoF_u));
-Np_free = DoF_p - 1; % use the fact that the last pressure dof is fixed
-Mp = spdiags(area(1:end-1), 0, Np_free, Np_free); % use the fact that the last pressure dof is fixed
-
-% Optional solvers (need Mp, Nu_free, Np_free built above):
-%   x(freeDoF) = exact_block_precond_solver(A(freeDoF,freeDoF), F(freeDoF), Nu_free, Np_free, Mp, nu_fun(0));
-%   x(freeDoF) = inexact_block_precond_solver(A(freeDoF,freeDoF), F(freeDoF), Nu_free, Np_free, Mp, nu_fun(0));
-
 %% Compute Errors
 
 ph = x(2*NO+NT+1:2*NO+2*NT);
@@ -485,17 +466,12 @@ end
 err_Dut = err_Dut.*area; err_ut = err_ut.*area; err_pt = err_pt.*area;
 
 err_u0 = sqrt(sum(err_ut));
-% Discrete H1-type seminorm ||u-u_h||_E, NOT scaled by nu (nu_elem multiplies
-% neither err_Dut nor B here).
 err_u = sqrt(sum(err_Dut) + (uhD'*B*uhD));
-% Brinkman energy norm |||u-u_h|||^2 = nu*||u-u_h||_E^2 + ||u-u_h||_0^2, with nu
-% applied explicitly at this combination step (nu_elem.*uhD lets this stay
-% correct once nu/K become spatially varying, e.g. a permeability map).
 err_triple = sqrt(sum(nu_elem.*err_Dut) + uhD'*B*(nu_elem.*uhD) + sum(err_ut));
 err_axp = sqrt(sum((ph-pt).^2.*area));
 err_p = sqrt(sum(err_pt));
 
-fprintf('\n    ||u-u_h||_E : %f    ||u-u_h||_0 : %f    |||u-u_h||| : %f    ||P_0p-p_h||_0 : %f    ||p-p_h||_0 : %f\n\n',err_u,err_u0,err_triple,err_axp,err_p)
+fprintf('\n    ||u-u_h||_E : %.3e    ||u-u_h||_0 : %.3e    |||u-u_h||| : %.3e    ||P_0p-p_h||_0 : %.3e    ||p-p_h||_0 : %.3e\n\n',err_u,err_u0,err_triple,err_axp,err_p)
 
 %% Plot Numerical Solutions
 
