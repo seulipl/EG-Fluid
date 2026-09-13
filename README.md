@@ -20,7 +20,7 @@ This repository contains MATLAB codes for solving fluid flow problems (currently
 - **Time_Stokes/**  
   Main scripts for running time-dependent Stokes problem solvers:  
   - `Stokes_Time2.m`, `Stokes_Time3.m`: sample problem information
-  - `main_EGTimeBE2.m`, `main_EGTimeBE3.m`: core time-dependent Stokes solvers in 2D and 3D using Backward Euler in time and [pressure-robust EG methods](https://arxiv.org/abs/2608.02913). Each script's `TestType` selects the standard EG method (1), pressure-robust body force only (2), or the fully pressure-robust body force and time-mass term (3).
+  - `main_EGTimeBE2.m`, `main_EGTimeBE3.m`: core time-dependent Stokes solvers in 2D and 3D using Backward Euler in time and [fully pressure-robust EG methods](https://arxiv.org/abs/2608.02913). Each script's `TestType` selects the standard EG method (1), pressure-robust body force only (2), or the fully pressure-robust body force and time-mass term (3).
 
 - **iFEM_files/**  
   Essential iFEM routines included here for convenience:  
